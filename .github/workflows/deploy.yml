@@ -19,7 +19,7 @@ jobs:
       id: dependencies
       run: |
         python3 -m pip install --upgrade pip
-        pip install -r requirements.txt pytest flake8
+        pip install -r requirements.txt pytest flake8 mongomock
 
     - name: 3. Run Automated Test Suite
       id: test
@@ -27,7 +27,8 @@ jobs:
         MONGO_URI: mongodb://localhost:27017/test_db
       run: |
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        pytest -v test_app.py
+        # Use python -m pytest to ensure matching virtual environment pathing
+        python3 -m pytest -v test_app.py
 
     - name: 4. Configure AWS Credentials
       id: aws-auth

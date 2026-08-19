@@ -1,19 +1,28 @@
 import pytest
-from app import app
+import mongomock
+from unittest.mock import patch
 
-@pytest.fixture
-def client():
+# Mock the PyMongo engine client connection globally before importing the app
+@pytest.fixture(autouse=True)
+def mock_mongo():
+    with patch('flask_pymongo.PyMongo') as mock:
+        # Mock instance attributes to prevent initialization attribute failures
+        mock_instance = mock.return_value
+        mock_instance.db = mongomock.MongoClient().db
+        yield mock_instance
+
+def test_home_route():
+    """Test that the application home route evaluates without network crashing."""
+    from app import app
     app.config['TESTING'] = True
     with app.test_client() as client:
-        yield client
+        response = client.get('/')
+        assert response is not None
 
-def test_home_route(client):
-    """Test that the application home route loads or redirects without crashing."""
-    response = client.get('/')
-    # Accepts 200 OK, 302 Redirect, or 404 if no records are found yet
-    assert response.status_code in [200, 302, 404]
-
-def test_health_endpoint(client):
-    """A standard placeholder test ensuring basic client routing functions work."""
-    response = client.get('/')
-    assert response is not None
+def test_health_endpoint():
+    """Ensure basic application client validation routes execute."""
+    from app import app
+    app.config['TESTING'] = True
+    with app.test_client() as client:
+        response = client.get('/')
+        assert response.status_code in [200, 302, 404]
