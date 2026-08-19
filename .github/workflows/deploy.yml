@@ -21,6 +21,7 @@ jobs:
 
     - name: 3. Run Automated Test Suite
       id: test
+      env: MONGO_URI: mongodb://localhost:27017/test_db
       run: |
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         pytest -v test_app.py
