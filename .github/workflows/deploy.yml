@@ -68,30 +68,17 @@ jobs:
         EC2_HOST: ${{ secrets.EC2_HOST_IP }}
         SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
       run: |
-        # Setup local SSH key file permissions safely
         mkdir -p ~/.ssh
         echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
-        
-        # Inject target host identity into known hosts to prevent user interaction blocks
         ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
         
-        # Execute deployment script payload over the native shell connection
-        ssh -i ~/.ssh/id_rsa ec2-user@$EC2_HOST << EEF
-          # Pull fresh image using the instance profile IAM role
-          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_REGISTRY
-          
-          # Clean teardown of existing running container
+        ssh -i ~/.ssh/id_rsa ec2-user@$EC2_HOST << 'EEF'
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ://amazonaws.com
           docker stop flask_app_prod || true
           docker rm flask_app_prod || true
-          
-          # Pull trace-tagged image
-          docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          
-          # Launch production service mapping port 5000
-          docker run -d -p 5000:5000 --name flask_app_prod $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          
-          # Deploy-Verification Gate
+          docker pull ://amazonaws.com/srinivas/ecr-repo:${{ github.sha }}
+          docker run -d -p 5000:5000 --name flask_app_prod ://amazonaws.com/srinivas/ecr-repo:${{ github.sha }}
           sleep 5
           echo "Executing /health verification probe..."
           if curl -f http://localhost:5000/; then
@@ -100,7 +87,7 @@ jobs:
             echo "CRITICAL: Health verification failed!"
             exit 1
           fi
-    EEF
+        EEF
 
     - name: 9. Send Success Notification Email
       if: success()
