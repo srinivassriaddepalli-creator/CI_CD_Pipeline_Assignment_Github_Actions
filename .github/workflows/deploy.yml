@@ -63,11 +63,11 @@ jobs:
       id: deploy
       env:
         EC2_HOST: 3.92.51.26
-        BASE64_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        RAW_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
       run: |
         mkdir -p ~/.ssh
-        # Cleanly decode the verified Base64 secret key
-        echo "$BASE64_SSH_KEY" | base64 --decode > ~/.ssh/id_rsa
+        # Use Python to safely write the text key file, removing any Windows carriage returns (\r) dynamically
+        python3 -c "import os; data = os.environ['RAW_SSH_KEY'].replace('\r', ''); open(os.path.expanduser('~/.ssh/id_rsa'), 'w').write(data.strip() + '\n')"
         chmod 600 ~/.ssh/id_rsa
         
         # Inject the server host identity into known hosts to bypass user prompts
