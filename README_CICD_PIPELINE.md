@@ -1300,7 +1300,7 @@ Expected:
 
 ## Screenshot 12 – Live Application
 
-![Uploading 12_app_running.png…]()
+<img width="950" height="300" alt="12_app_running" src="https://github.com/user-attachments/assets/e5f27cbd-e4af-4535-a51f-51ec872f4320" />
 
 
 Open:
