@@ -11,91 +11,140 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: 1. Checkout Source Code
-      id: checkout
-      uses: actions/checkout@v4
+      - name: 1. Checkout Source Code
+        id: checkout
+        uses: actions/checkout@v4
 
-    - name: 2. Install Dependencies
-      id: dependencies
-      run: |
-        python3 -m pip install --upgrade pip
-        pip install -r requirements.txt pytest flake8 mongomock
+      - name: 2. Install Dependencies
+        id: dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install -r requirements.txt pytest flake8 mongomock
 
-    - name: 3. Run Automated Test Suite
-      id: test
-      env:
-        MONGO_URI: mongodb://localhost:27017/test_db
-      run: |
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        python3 -m pytest -v test_app.py
+      - name: 3. Run Automated Test Suite
+        id: test
+        env:
+          MONGO_URI: mongodb://localhost:27017/test_db
+        run: |
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          python3 -m pytest -v test_app.py
 
-    - name: 4. Configure AWS Credentials
-      id: aws-auth
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1
+      - name: 4. Configure AWS Credentials
+        id: aws-auth
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
 
-    - name: 5. Log in to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v2
+      - name: 5. Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
-    - name: 6. Build Docker Image (Commit SHA Tagged)
-      id: build
-      run: |
-        docker build -t ://amazonaws.com{{ github.sha }} .
+      - name: 6. Build Docker Image (Commit SHA Tagged)
+        id: build
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REPOSITORY: flask-app
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
 
-    - name: 7. Push Image to ECR
-      id: push
-      run: |
-        docker push ://amazonaws.com{{ github.sha }}
+      - name: 7. Push Image to ECR
+        id: push
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REPOSITORY: flask-app
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
 
-    - name: 8. Deploy to EC2 via Official SSH Action & Run Health Check Gate
-      id: deploy
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.EC2_HOST_IP }}
-        username: ec2-user
-        key: ${{ secrets.EC2_SSH_KEY }}
-        script: |
-          export PATH=$PATH:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
-          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ://amazonaws.com
-          docker stop flask_app_prod || true
-          docker rm flask_app_prod || true
-          docker pull ://amazonaws.com{{ github.sha }}
-          docker run -d -p 5000:5000 --name flask_app_prod ://amazonaws.com{{ github.sha }}
-          sleep 7
-          echo "Executing application deployment verification check..."
-          if curl -f http://localhost:5000/; then
-            echo "Deployment verification check passed successfully!"
-          else
-            echo "CRITICAL ERROR: Health verification failed!"
-            exit 1
-          fi
+      - name: 8. Deploy to EC2 via SSH & Run Health Check Gate
+        id: deploy
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: flask-app
+          IMAGE_TAG: ${{ github.sha }}
+        with:
+          host: ${{ secrets.EC2_HOST_IP }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: ECR_REGISTRY,ECR_REPOSITORY,IMAGE_TAG
+          script: |
+            export PATH=$PATH:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
 
-    - name: 9. Send Success Notification Email
-      if: success()
-      uses: dawidd6/action-send-mail@v3
-      with:
-        server_address: ://gmail.com
-        server_port: 465
-        username: ${{ secrets.MAIL_USERNAME }}
-        password: ${{ secrets.MAIL_PASSWORD }}
-        subject: "SUCCESS - CI/CD Pipeline Deployed Successfully"
-        to: ${{ secrets.NOTIFICATION_EMAIL }}
-        from: "GitHub Pipeline Monitor <noreply@github.com>"
-        body: "Pipeline Run Status: SUCCESS. Deployed Branch: ${{ github.ref_name }}. Traceable Commit SHA: ${{ github.sha }}. Target Compute Target: AWS EC2 Instance (${{ secrets.EC2_HOST_IP }}). Review logs: https://github.com{{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo "Logging in to Amazon ECR..."
+            aws ecr get-login-password --region us-east-1 | \
+              docker login \
+              --username AWS \
+              --password-stdin "$ECR_REGISTRY"
 
-    - name: 10. Send Failure Notification Email
-      if: failure()
-      uses: dawidd6/action-send-mail@v3
-      with:
-        server_address: ://gmail.com
-        server_port: 465
-        username: ${{ secrets.MAIL_USERNAME }}
-        password: ${{ secrets.MAIL_PASSWORD }}
-        subject: "FAILURE - CI/CD Pipeline Execution Blocked"
-        to: ${{ secrets.NOTIFICATION_EMAIL }}
-        from: "GitHub Pipeline Monitor <noreply@github.com>"
-        body: "Pipeline Run Status: FAILED. Target Repository: ${{ github.repository }}. Broken Commit SHA: ${{ github.sha }}. Current Branch: ${{ github.ref_name }}. Review logs: https://github.com{{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo "Stopping existing application..."
+            docker stop flask_app_prod || true
+            docker rm flask_app_prod || true
+
+            echo "Pulling image from ECR..."
+            docker pull "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+            echo "Starting new application container..."
+            docker run -d \
+              -p 5000:5000 \
+              --name flask_app_prod \
+              "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+            echo "Waiting for application to start..."
+            sleep 7
+
+            echo "Executing application deployment verification check..."
+
+            if curl -f http://localhost:5000/; then
+              echo "Deployment verification check passed successfully!"
+            else
+              echo "CRITICAL ERROR: Health verification failed!"
+              echo "Container logs:"
+              docker logs flask_app_prod || true
+              exit 1
+            fi
+
+      - name: 9. Send Success Notification Email
+        if: success()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "SUCCESS - CI/CD Pipeline Deployed Successfully"
+          to: ${{ secrets.NOTIFICATION_EMAIL }}
+          from: "GitHub Pipeline Monitor <noreply@github.com>"
+          body: |
+            Pipeline Run Status: SUCCESS.
+
+            Deployed Branch: ${{ github.ref_name }}
+            Traceable Commit SHA: ${{ github.sha }}
+            Target Compute Target: AWS EC2 Instance (${{ secrets.EC2_HOST_IP }})
+
+            Review logs:
+            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+      - name: 10. Send Failure Notification Email
+        if: failure()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "FAILURE - CI/CD Pipeline Execution Blocked"
+          to: ${{ secrets.NOTIFICATION_EMAIL }}
+          from: "GitHub Pipeline Monitor <noreply@github.com>"
+          body: |
+            Pipeline Run Status: FAILED.
+
+            Target Repository: ${{ github.repository }}
+            Broken Commit SHA: ${{ github.sha }}
+            Current Branch: ${{ github.ref_name }}
+
+            Review logs:
+            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
