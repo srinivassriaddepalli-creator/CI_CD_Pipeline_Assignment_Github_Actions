@@ -59,22 +59,14 @@ jobs:
       run: |
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-    - name: 8. Deploy to EC2 via Safe SSH & Perform Health Check Verification Gate
+    - name: 8. Deploy to EC2 via Safe SSH Action & Verify Health
       id: deploy
-      env:
-        EC2_HOST: 3.92.51.26
-        RAW_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
-      run: |
-        mkdir -p ~/.ssh
-        # Use Python to safely write the text key file, removing any Windows carriage returns (\r) dynamically
-        python3 -c "import os; data = os.environ['RAW_SSH_KEY'].replace('\r', ''); open(os.path.expanduser('~/.ssh/id_rsa'), 'w').write(data.strip() + '\n')"
-        chmod 600 ~/.ssh/id_rsa
-        
-        # Inject the server host identity into known hosts to bypass user prompts
-        ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
-        
-        # Open the SSH tunnel bypassing modern Post-Quantum algorithmic check blocks
-        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -o KexAlgorithms=+curve25519-sha256 -o PubkeyAcceptedKeyTypes=+ssh-rsa ec2-user@$EC2_HOST << 'EEF'
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: 3.92.51.26
+        username: ec2-user
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
           # Authenticate against AWS ECR
           aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ://amazonaws.com
           
@@ -97,7 +89,6 @@ jobs:
             echo "CRITICAL: Health verification failed!"
             exit 1
           fi
-        EEF
 
     - name: 9. Send Success Notification Email
       if: success()
