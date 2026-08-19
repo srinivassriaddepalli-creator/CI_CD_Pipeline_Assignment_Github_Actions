@@ -7,3 +7,5 @@ pytest
 pylint
 bandit
 black
+mongomock
+flake8
