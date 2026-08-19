@@ -59,19 +59,20 @@ jobs:
       run: |
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-    - name: 8. Deploy to EC2 via Native SSH & Perform Health Check Verification Gate
+    - name: 8. Deploy to EC2 via Safe SSH & Perform Health Check Verification Gate
       id: deploy
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         ECR_REPOSITORY: srinivas/ecr-repo
         IMAGE_TAG: ${{ github.sha }}
         EC2_HOST: ${{ secrets.EC2_HOST_IP }}
-        SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
+        RAW_PEM_DATA: ${{ secrets.EC2_RAW_PEM_KEY }}
       run: |
         mkdir -p ~/.ssh
-        # Sanitize the SSH private key by removing Windows carriage returns and appending a required empty newline
-        echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
-        echo "" >> ~/.ssh/id_rsa
+        # Write out the raw multi-line credential layout into a local variable safely
+        cat << 'EOM' > ~/.ssh/id_rsa
+        ${{ secrets.EC2_RAW_PEM_KEY }}
+        EOM
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
         
