@@ -9,7 +9,7 @@ on:
 jobs:
   devops-pipeline:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: 1. Checkout Source Code
       id: checkout
@@ -59,23 +59,12 @@ jobs:
         username: ec2-user
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
-          # Explicitly extend binary execution paths for safety
           export PATH=$PATH:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
-          
-          # Login to AWS ECR using hardcoded variables
-          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ://amazonaws.com
-          
-          # Clean teardown of existing running container configurations
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 545931885961.dkr.ecr.us-east-1.amazonaws.com
           docker stop flask_app_prod || true
           docker rm flask_app_prod || true
-          
-          # Pull trace-tagged image using the matching commit SHA tag
           docker pull ://amazonaws.com{{ github.sha }}
-          
-          # Launch production service mapping runtime container port 5000
           docker run -d -p 5000:5000 --name flask_app_prod ://amazonaws.com{{ github.sha }}
-          
-          # Deploy-Verification Health Check Gate explicitly targeting the core route
           sleep 7
           echo "Executing application deployment verification check..."
           if curl -f http://localhost:5000/; then
@@ -89,42 +78,24 @@ jobs:
       if: success()
       uses: dawidd6/action-send-mail@v3
       with:
-        server_address: ://gmail.com
+        server_address: smtp.gmail.com
         server_port: 465
         username: ${{ secrets.MAIL_USERNAME }}
         password: ${{ secrets.MAIL_PASSWORD }}
-        subject: "SUCCESS: CI/CD Pipeline Deployed Successfully"
+        subject: "SUCCESS - CI/CD Pipeline Deployed Successfully"
         to: ${{ secrets.NOTIFICATION_EMAIL }}
-        from: GitHub Pipeline Monitor <noreply@github.com>
-        body: |
-          Pipeline Run Status: SUCCESS
-          ------------------------------------------
-          The automated delivery pipeline has completed successfully.
-          • Deployed Branch: ${{ github.ref_name }}
-          • Traceable Commit SHA: ${{ github.sha }}
-          • Target Compute Target: AWS EC2 Instance (${{ secrets.EC2_HOST_IP }})
-          • Verification Gate: Application responded with an HTTP 200 Status Code.
-          
-          Review Full Workflow Logs: https://github.com{{ github.run_id }}
+        from: "GitHub Pipeline Monitor <noreply@github.com>"
+        body: "Pipeline Run Status: SUCCESS. Deployed Branch: ${{ github.ref_name }}. Traceable Commit SHA: ${{ github.sha }}. Target Compute Target: AWS EC2 Instance (${{ secrets.EC2_HOST_IP }}). Review logs: https://github.com{{ github.repository }}/actions/runs/${{ github.run_id }}"
 
     - name: 10. Send Failure Notification Email
       if: failure()
       uses: dawidd6/action-send-mail@v3
       with:
-        server_address: ://gmail.com
+        server_address: smtp.gmail.com
         server_port: 465
         username: ${{ secrets.MAIL_USERNAME }}
         password: ${{ secrets.MAIL_PASSWORD }}
-        subject: "FAILURE: CI/CD Pipeline Execution Blocked"
+        subject: "FAILURE - CI/CD Pipeline Execution Blocked"
         to: ${{ secrets.NOTIFICATION_EMAIL }}
-        from: GitHub Pipeline Monitor <noreply@github.com>
-        body: |
-          Pipeline Run Status: FAILED
-          ------------------------------------------
-          The automated pipeline run has failed and stopped early.
-          • Target Repository: ${{ github.repository }}
-          • Broken Commit SHA: ${{ github.sha }}
-          • Current Branch: ${{ github.ref_name }}
-          
-          Review logs breakdown immediately: https://github.com{{ github.run_id }}
-EOF
+        from: "GitHub Pipeline Monitor <noreply@github.com>"
+        body: "Pipeline Run Status: FAILED. Target Repository: ${{ github.repository }}. Broken Commit SHA: ${{ github.sha }}. Current Branch: ${{ github.ref_name }}. Review logs: https://github.com{{ github.repository }}/actions/runs/${{ github.run_id }}"
