@@ -22,6 +22,12 @@ def index():
     students = mongo.db.students.find()
     return render_template('index.html', students=students)
 
+# Health check
+@app.route("/health")
+def health():
+    return {"status": "healthy"}, 200
+
+
 # Add student
 @app.route('/add', methods=['GET', 'POST'])
 def add_student():
