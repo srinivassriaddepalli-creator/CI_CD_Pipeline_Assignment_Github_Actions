@@ -1317,6 +1317,15 @@ Capture the running Student Management System.
 
 ---
 
+## Screenshot CI-CD Pipeline Failure Email Notification
+
+<img width="791" height="284" alt="image" src="https://github.com/user-attachments/assets/38644419-07dc-451f-9f4a-48dcdca24db7" />
+
+## Screenshot CI-CD Pipeline Seccussful Email Notification
+
+<img width="813" height="380" alt="Gmail_CI_CD_Pipeline_Seccussful" src="https://github.com/user-attachments/assets/0d18ab1f-82f2-4749-83e5-91c0dd987c6c" />
+
+
 # 41. Recommended Screenshot Order
 
 For the final assignment/documentation, use this order:
