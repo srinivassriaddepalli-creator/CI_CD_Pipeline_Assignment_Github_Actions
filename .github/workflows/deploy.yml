@@ -66,22 +66,24 @@ jobs:
         ECR_REPOSITORY: srinivas/ecr-repo
         IMAGE_TAG: ${{ github.sha }}
         EC2_HOST: ${{ secrets.EC2_HOST_IP }}
-        RAW_PEM_DATA: ${{ secrets.EC2_RAW_PEM_KEY }}
       run: |
         mkdir -p ~/.ssh
-        # Write out the raw multi-line credential layout into a local variable safely
-        cat << 'EOM' > ~/.ssh/id_rsa
+        
+        # Scrub hidden Windows carriage returns and add a clean newline to satisfy libcrypto
+        cat << 'EOM' | tr -d '\r' > ~/.ssh/id_rsa
         ${{ secrets.EC2_RAW_PEM_KEY }}
         EOM
+        echo "" >> ~/.ssh/id_rsa
+        
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
         
         ssh -i ~/.ssh/id_rsa ec2-user@$EC2_HOST << 'EEF'
-          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ://amazonaws.com
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 545931885961.dkr.ecr.us-east-1.amazonaws.com
           docker stop flask_app_prod || true
           docker rm flask_app_prod || true
-          docker pull ://amazonaws.com/srinivas/ecr-repo:${{ github.sha }}
-          docker run -d -p 5000:5000 --name flask_app_prod ://amazonaws.com/srinivas/ecr-repo:${{ github.sha }}
+          docker pull ://amazonaws.com{{ github.sha }}
+          docker run -d -p 5000:5000 --name flask_app_prod ://amazonaws.com{{ github.sha }}
           sleep 5
           echo "Executing /health verification probe..."
           if curl -f http://localhost:5000/; then
