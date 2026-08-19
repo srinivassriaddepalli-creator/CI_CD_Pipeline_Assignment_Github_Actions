@@ -1049,6 +1049,8 @@ The following screenshots should be included as evidence for the project.
 
 ## Screenshot 1 – GitHub Repository
 
+<img width="944" height="509" alt="01-github-repository" src="https://github.com/user-attachments/assets/d0fb8764-436d-4168-b8ee-f1737022be4e" />
+
 Capture the GitHub repository showing:
 
 * Source files
@@ -1063,6 +1065,8 @@ Capture the GitHub repository showing:
 ---
 
 ## Screenshot 2 – Flask Application
+
+<img width="956" height="495" alt="02-flask-app" src="https://github.com/user-attachments/assets/047318ad-0c25-4cdf-adcb-821ce4e9ca07" />
 
 Capture:
 
@@ -1092,6 +1096,8 @@ def health():
 
 ## Screenshot 3 – Pytest
 
+<img width="955" height="256" alt="03-04-tests" src="https://github.com/user-attachments/assets/d345f23e-f4a3-4f04-b917-5b47964e8c4a" />
+
 Run:
 
 ```bash
@@ -1108,6 +1114,8 @@ Capture the successful test result.
 
 ## Screenshot 4 – Flake8
 
+<img width="955" height="256" alt="03-tests" src="https://github.com/user-attachments/assets/8638bc7d-e8be-48f5-8e23-29f85495dc77" />
+
 Run:
 
 ```bash
@@ -1121,6 +1129,7 @@ flake8 . \
 
 Capture the successful result.
 
+
 **Caption:**
 
 > Flake8 code validation completed successfully.
@@ -1128,6 +1137,9 @@ Capture the successful result.
 ---
 
 ## Screenshot 5 – Docker Image
+
+<img width="921" height="452" alt="07-docker-build" src="https://github.com/user-attachments/assets/293ccabb-d5e7-470a-bf86-c26c278f6340" />
+
 
 Run:
 
@@ -1148,6 +1160,8 @@ flask-practice-app
 ---
 
 ## Screenshot 6 – Docker Container
+
+<img width="944" height="366" alt="08-docker-container" src="https://github.com/user-attachments/assets/3ae7a0dc-d847-4713-8e9d-bd698b9a046c" />
 
 Run:
 
@@ -1175,6 +1189,8 @@ and:
 
 ## Screenshot 7 – Local Health Check
 
+<img width="854" height="245" alt="05-local-health-check" src="https://github.com/user-attachments/assets/7b1801fb-a8ff-46bd-9b65-148cfe5d1bdc" />
+
 Run:
 
 ```bash
@@ -1194,6 +1210,7 @@ Capture:
 ---
 
 ## Screenshot 8 – GitHub Actions
+<img width="959" height="506" alt="08-github-actions-success" src="https://github.com/user-attachments/assets/2413947c-8c49-48cf-b627-00e24c8bf546" />
 
 Open:
 
@@ -1213,6 +1230,8 @@ Capture the successful workflow.
 
 ## Screenshot 9 – Amazon ECR
 
+<img width="959" height="502" alt="09-ecr-repository" src="https://github.com/user-attachments/assets/81fc6620-6d2b-4f05-98ba-4d4ef458dc85" />
+
 Open:
 
 ```text
@@ -1228,6 +1247,9 @@ Capture the Docker image and tag.
 ---
 
 ## Screenshot 10 – EC2 Container
+
+<img width="779" height="35" alt="10-Flask production Docker container" src="https://github.com/user-attachments/assets/8e28439b-37b5-4c1b-9321-4b92a9337e0b" />
+
 
 SSH into EC2 and run:
 
@@ -1255,6 +1277,9 @@ and:
 
 ## Screenshot 11 – EC2 Health Check
 
+<img width="718" height="161" alt="8-health-status-app" src="https://github.com/user-attachments/assets/7c20773f-83a0-4a14-b271-5ef2dea4bb34" />
+
+
 On EC2 run:
 
 ```bash
@@ -1274,6 +1299,9 @@ Expected:
 ---
 
 ## Screenshot 12 – Live Application
+
+![Uploading 12_app_running.png…]()
+
 
 Open:
 
