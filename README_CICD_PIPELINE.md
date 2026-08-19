@@ -1189,7 +1189,7 @@ and:
 
 ## Screenshot 7 – Local Health Check
 
-<img width="854" height="245" alt="05-local-health-check" src="https://github.com/user-attachments/assets/7b1801fb-a8ff-46bd-9b65-148cfe5d1bdc" />
+<img width="761" height="40" alt="07_local_health_check" src="https://github.com/user-attachments/assets/2f25a0ac-540c-446e-ad82-88bacf0ef372" />
 
 Run:
 
