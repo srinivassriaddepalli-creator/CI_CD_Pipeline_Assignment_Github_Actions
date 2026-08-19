@@ -1,214 +1,120 @@
-# CI/CD Pipeline Assignment – GitHub Actions, Docker, AWS ECR & EC2
+# CI/CD Pipeline for Flask Application
+
+## Flask + MongoDB + Docker + GitHub Actions + AWS ECR + AWS EC2
+
+---
 
 ## 1. Project Overview
 
-This project demonstrates an end-to-end **CI/CD pipeline** for a Flask application using **GitHub Actions**, **Docker**, **Amazon ECR**, **Amazon EC2**, and **MongoDB Atlas**.
+This project demonstrates an end-to-end **CI/CD pipeline** for a Python Flask web application.
 
-The pipeline automatically:
+The application is a simple **Student Management System** that uses MongoDB as its database. The application is containerized using Docker and automatically deployed to an Amazon EC2 instance using GitHub Actions.
 
-1. Validates the Flask application.
-2. Runs automated tests and code-quality checks.
-3. Builds a Docker image.
-4. Pushes the image to Amazon Elastic Container Registry (ECR).
-5. Connects to an Amazon EC2 instance through SSH.
-6. Pulls the newly created Docker image.
-7. Stops and removes the previous application container.
-8. Starts the new application container.
-9. Passes the MongoDB connection string securely to the container.
-10. Performs an application health check.
-11. Fails the deployment if the health check does not pass.
-12. Sends an email notification based on deployment success or failure.
+The CI/CD pipeline automatically performs:
 
-The overall flow is:
-
-```text
-Developer
-    |
-    | git push
-    v
-GitHub Repository
-    |
-    v
-GitHub Actions
-    |
-    +----------------------+
-    |                      |
-    v                      v
-Flake8                 Pytest
-    |                      |
-    +----------+-----------+
-               |
-               v
-        Docker Image Build
-               |
-               v
-          Amazon ECR
-               |
-               v
-        SSH into EC2
-               |
-               v
-        Docker Pull Image
-               |
-               v
-      Stop Old Container
-               |
-               v
-       Start New Container
-               |
-               v
-       /health Endpoint
-               |
-        +------+------+
-        |             |
-      PASS           FAIL
-        |             |
-        v             v
-    Success         Failure
-     Email           Email
-```
+1. Source code checkout
+2. Python dependency installation
+3. Flake8 code validation
+4. Automated testing using Pytest
+5. AWS credential configuration
+6. Docker image creation
+7. Docker image push to Amazon ECR
+8. SSH deployment to Amazon EC2
+9. Docker container replacement
+10. Application health check
+11. Deployment success/failure verification
 
 ---
 
 # 2. Project Objective
 
-The objective of this assignment is to implement a reliable automated CI/CD pipeline that takes application code from a GitHub repository and deploys it to a production-like AWS environment.
+The main objective of this project is to implement an automated CI/CD pipeline where a developer can push code to GitHub and the application is automatically:
 
-The pipeline should demonstrate:
+```text
+GitHub
+   |
+   v
+GitHub Actions
+   |
+   +---- Code Checkout
+   |
+   +---- Install Dependencies
+   |
+   +---- Flake8 Validation
+   |
+   +---- Pytest
+   |
+   +---- Docker Build
+   |
+   +---- Push Image to Amazon ECR
+   |
+   +---- SSH to Amazon EC2
+   |
+   +---- Pull Docker Image
+   |
+   +---- Start Flask Container
+   |
+   +---- Health Check
+   |
+   v
+Production Application
+````
 
-* Source code management using GitHub.
-* Continuous Integration using GitHub Actions.
-* Automated code validation.
-* Automated testing.
-* Docker containerization.
-* Docker image versioning.
-* Amazon ECR integration.
-* Amazon EC2 deployment.
-* Secure secret management.
-* MongoDB Atlas integration.
-* Automated deployment verification.
-* Health-check-based deployment gating.
-* Success/failure notifications.
+This eliminates the need to manually build, transfer, and deploy the application after every code change.
 
 ---
 
 # 3. Technologies Used
 
-| Technology     | Purpose                            |
-| -------------- | ---------------------------------- |
-| Python         | Application programming language   |
-| Flask          | Web application framework          |
-| Flask-PyMongo  | MongoDB integration                |
-| PyMongo        | MongoDB driver                     |
-| Pytest         | Automated testing                  |
-| Flake8         | Python code-quality validation     |
-| Docker         | Application containerization       |
-| GitHub         | Source code repository             |
-| GitHub Actions | CI/CD automation                   |
-| Amazon ECR     | Docker image registry              |
-| Amazon EC2     | Application hosting                |
-| AWS CLI        | AWS resource interaction           |
-| MongoDB Atlas  | Cloud MongoDB database             |
-| SSH            | Secure EC2 deployment              |
-| Gunicorn       | Recommended production WSGI server |
-| SMTP/Gmail     | Email notification                 |
+| Technology     | Purpose                          |
+| -------------- | -------------------------------- |
+| Python         | Application programming language |
+| Flask          | Web application framework        |
+| MongoDB Atlas  | Cloud database                   |
+| PyMongo        | MongoDB integration              |
+| Pytest         | Automated testing                |
+| Mongomock      | MongoDB mocking during tests     |
+| Flake8         | Code validation                  |
+| Docker         | Application containerization     |
+| GitHub         | Source-code repository           |
+| GitHub Actions | CI/CD automation                 |
+| Amazon ECR     | Docker image registry            |
+| Amazon EC2     | Application hosting              |
+| SSH            | Secure EC2 deployment            |
+| curl           | Application health check         |
 
 ---
 
-# 4. Application Architecture
+# 4. Application Features
 
-The application is a Flask-based web application connected to MongoDB.
+The Flask application provides a Student Management System.
 
-```text
-                  Internet
-                     |
-                     v
-              Amazon EC2
-                     |
-                     v
-             Docker Container
-                     |
-                     v
-              Flask Application
-                     |
-                     v
-                MongoDB Atlas
-```
+The application supports:
 
-The Docker container exposes port `5000`.
-
-```text
-EC2 Port 5000
-      |
-      v
-Docker Port 5000
-      |
-      v
-Flask Application
-```
+* Displaying students
+* Adding students
+* Updating students
+* Deleting students
+* MongoDB database integration
+* Application health monitoring
 
 ---
 
-# 5. Repository Structure
+# 5. Application Routes
 
-A typical repository structure is:
-
-```text
-CI_CD_Pipeline_Assignment_Github_Actions/
-│
-├── .github/
-│   └── workflows/
-│       └── deploy.yml
-│
-├── app.py
-├── test_app.py
-├── requirements.txt
-├── Dockerfile
-├── .gitignore
-└── README.md
-```
-
-## Important files
-
-### `app.py`
-
-Contains the Flask application and MongoDB configuration.
-
-### `test_app.py`
-
-Contains automated tests for the Flask application.
-
-### `requirements.txt`
-
-Contains Python dependencies required by the application.
-
-### `Dockerfile`
-
-Defines how the Flask application is packaged into a Docker image.
-
-### `.github/workflows/deploy.yml`
-
-Defines the complete CI/CD workflow.
-
-### `README.md`
-
-Contains project documentation and deployment instructions.
+| Route                  | Method   | Description              |
+| ---------------------- | -------- | ------------------------ |
+| `/`                    | GET      | Display all students     |
+| `/health`              | GET      | Application health check |
+| `/add`                 | GET/POST | Add a student            |
+| `/update/<student_id>` | GET/POST | Update a student         |
+| `/delete/<student_id>` | GET      | Delete a student         |
 
 ---
 
-# 6. Flask Application
+# 6. Health Check Endpoint
 
-The application uses Flask and Flask-PyMongo.
-
-The MongoDB connection is obtained from the `MONGO_URI` environment variable rather than hard-coding credentials in the source code.
-
-Example:
-
-```python
-app.config["MONGO_URI"] = os.getenv("MONGO_URI")
-```
-
-The application also provides a health-check endpoint:
+The application provides a dedicated health endpoint:
 
 ```python
 @app.route("/health")
@@ -216,24 +122,9 @@ def health():
     return {"status": "healthy"}, 200
 ```
 
-The health endpoint is important because the CI/CD pipeline uses it to determine whether the newly deployed container is functioning correctly.
+The CI/CD pipeline uses this endpoint to verify that the deployed application is working correctly.
 
----
-
-# 7. Health Check
-
-The deployment pipeline executes:
-
-```bash
-curl --fail \
-  --silent \
-  --show-error \
-  --connect-timeout 5 \
-  --max-time 15 \
-  http://localhost:5000/health
-```
-
-A successful response should be:
+A successful health check returns:
 
 ```json
 {
@@ -241,54 +132,322 @@ A successful response should be:
 }
 ```
 
-The pipeline considers the deployment successful only when this endpoint returns HTTP status `200`.
-
-If the endpoint returns `404`, `500`, times out, or cannot be reached, the deployment is marked as failed.
-
-This provides a deployment safety gate.
+The deployment is considered successful only after the health check returns HTTP `200`.
 
 ---
 
-# 8. Docker Configuration
+# 7. Project Structure
+
+The project structure is:
+
+```text
+flask_Practice/
+│
+├── app.py
+├── test_app.py
+├── requirements.txt
+├── Dockerfile
+├── .gitignore
+├── .env
+│
+├── templates/
+│   ├── index.html
+│   ├── add_student.html
+│   └── update_student.html
+│
+└── .github/
+    └── workflows/
+        └── deploy.yml
+```
+
+---
+
+# 8. Important Files
+
+## `app.py`
+
+Contains the Flask application, MongoDB configuration, routes, and health-check endpoint.
+
+## `test_app.py`
+
+Contains automated tests for the Flask application.
+
+## `requirements.txt`
+
+Contains Python dependencies required by the application.
+
+## `Dockerfile`
+
+Contains instructions to build the Docker image.
+
+## `.github/workflows/deploy.yml`
+
+Contains the complete GitHub Actions CI/CD pipeline.
+
+## `.env`
+
+Contains local environment variables.
+
+> Never commit `.env` to GitHub.
+
+---
+
+# 9. MongoDB Configuration
+
+The application uses MongoDB Atlas.
+
+The MongoDB connection string is provided through an environment variable:
+
+```text
+MONGO_URI
+```
+
+Example format:
+
+```text
+mongodb+srv://username:password@cluster.mongodb.net/student_db
+```
+
+The actual MongoDB credentials must not be hard-coded in the source code.
+
+The Flask application reads the variable using:
+
+```python
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+app.config["MONGO_URI"] = os.getenv("MONGO_URI")
+```
+
+MongoDB is accessed through Flask-PyMongo:
+
+```python
+mongo = PyMongo(app, tlsCAFile=certifi.where())
+```
+
+---
+
+# 10. MongoDB Collection
+
+Student records are stored in the:
+
+```text
+students
+```
+
+collection.
+
+The application performs the following MongoDB operations:
+
+### Read
+
+```python
+mongo.db.students.find()
+```
+
+### Insert
+
+```python
+mongo.db.students.insert_one(...)
+```
+
+### Update
+
+```python
+mongo.db.students.update_one(...)
+```
+
+### Delete
+
+```python
+mongo.db.students.delete_one(...)
+```
+
+---
+
+# 11. Local Development Setup
+
+## Step 1 – Clone the Repository
+
+```bash
+git clone <YOUR_GITHUB_REPOSITORY_URL>
+cd flask_Practice
+```
+
+---
+
+## Step 2 – Create a Virtual Environment
+
+```bash
+python3 -m venv venv
+```
+
+Activate it:
+
+```bash
+source venv/bin/activate
+```
+
+---
+
+## Step 3 – Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+Development/test dependencies should include:
+
+```text
+pytest
+mongomock
+flake8
+```
+
+---
+
+# 12. Configure Environment Variables
+
+Create a `.env` file:
+
+```text
+MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/student_db
+SECRET_KEY=your-secret-key
+```
+
+Do not commit this file.
+
+Add `.env` to `.gitignore`:
+
+```text
+.env
+venv/
+__pycache__/
+.pytest_cache/
+```
+
+---
+
+# 13. Run Flask Application Locally
+
+Run:
+
+```bash
+python app.py
+```
+
+The application starts on:
+
+```text
+http://127.0.0.1:5000
+```
+
+Open the application in a browser:
+
+```text
+http://127.0.0.1:5000/
+```
+
+---
+
+# 14. Test the Health Endpoint Locally
+
+Run:
+
+```bash
+curl --fail http://localhost:5000/health
+```
+
+Expected output:
+
+```json
+{"status": "healthy"}
+```
+
+This confirms that the Flask application is responding successfully.
+
+---
+
+# 15. Automated Testing
+
+Run the test suite:
+
+```bash
+python3 -m pytest -v test_app.py
+```
+
+A successful test execution should show the tests passing.
+
+The purpose of the automated tests is to ensure that application changes do not introduce regressions.
+
+---
+
+# 16. Flake8 Validation
+
+Run Flake8 against the project source code:
+
+```bash
+flake8 . \
+  --exclude=venv \
+  --count \
+  --select=E9,F63,F7,F82 \
+  --show-source \
+  --statistics
+```
+
+The `venv` directory should be excluded because it contains third-party packages rather than project source code.
+
+Flake8 checks for serious Python errors including:
+
+* Syntax errors
+* Undefined names
+* Invalid Python constructs
+* Other critical code issues
+
+---
+
+# 17. Docker Configuration
 
 The application is containerized using Docker.
 
-A typical Dockerfile is:
-
-```dockerfile
-FROM python:3.11-slim
-
-WORKDIR /app
-
-COPY requirements.txt .
-
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY . .
-
-EXPOSE 5000
-
-CMD ["python", "app.py"]
-```
-
 The Docker image packages:
 
-* Python runtime
-* Flask application
-* Python dependencies
+* Python
+* Flask
 * Application source code
+* Python dependencies
+* HTML templates
+* Required runtime configuration
 
 ---
 
-# 9. Local Docker Testing
+# 18. Build Docker Image
 
-Build the image:
+Build the Docker image:
 
 ```bash
 docker build -t flask-practice-app:latest .
 ```
 
-Run the container:
+Verify the image:
+
+```bash
+docker images
+```
+
+Expected image:
+
+```text
+flask-practice-app
+```
+
+---
+
+# 19. Run Docker Container Locally
+
+Run:
 
 ```bash
 docker run -d \
@@ -298,176 +457,131 @@ docker run -d \
   flask-practice-app:latest
 ```
 
-Verify:
+Check the running container:
 
 ```bash
 docker ps
 ```
 
-Test:
+Expected port mapping:
+
+```text
+0.0.0.0:5000->5000/tcp
+```
+
+---
+
+# 20. Test Docker Application
+
+Run:
 
 ```bash
-curl http://localhost:5000/health
+curl --fail http://localhost:5000/health
 ```
 
 Expected:
 
 ```json
-{"status":"healthy"}
+{"status": "healthy"}
 ```
+
+This confirms that the application is working inside the Docker container.
 
 ---
 
-# 10. MongoDB Atlas Configuration
+# 21. Docker Container Name Conflict
 
-MongoDB Atlas is used as the cloud database.
-
-The application requires the following environment variable:
+If Docker displays:
 
 ```text
-MONGO_URI
+Conflict. The container name "/flask_app_container" is already in use
 ```
 
-The URI follows this general structure:
+check existing containers:
+
+```bash
+docker ps -a
+```
+
+Remove the old container:
+
+```bash
+docker rm -f flask_app_container
+```
+
+Then start the new container again.
+
+---
+
+# 22. Port 5000 Conflict
+
+If Flask displays:
 
 ```text
-mongodb+srv://USERNAME:PASSWORD@CLUSTER/DATABASE
+Address already in use
+Port 5000 is in use
 ```
 
-The actual database credentials must never be committed to Git.
+check running containers:
+
+```bash
+docker ps
+```
+
+If an existing Docker container is already using port 5000, test it using:
+
+```bash
+curl http://localhost:5000/health
+```
+
+If the response is:
+
+```json
+{"status": "healthy"}
+```
+
+the existing container is already serving the application.
 
 ---
 
-# 11. GitHub Secrets
+# 23. AWS Architecture
 
-Sensitive credentials are stored using GitHub Actions Secrets.
-
-The pipeline uses secrets such as:
+The deployment uses the following AWS architecture:
 
 ```text
-MONGO_URI
-AWS_ACCESS_KEY_ID
-AWS_SECRET_ACCESS_KEY
-EC2_HOST_IP
-EC2_SSH_KEY
-MAIL_USERNAME
-MAIL_PASSWORD
-NOTIFICATION_EMAIL
-```
-
-These values are referenced from GitHub Actions using:
-
-```yaml
-${{ secrets.MONGO_URI }}
-```
-
-Secrets are not hard-coded into the repository.
-
----
-
-# 12. GitHub Actions Workflow
-
-The workflow is divided into multiple stages.
-
-## Stage 1 – Checkout
-
-GitHub Actions checks out the latest source code.
-
-```yaml
-uses: actions/checkout@v4
+GitHub Actions
+       |
+       | Docker Image
+       v
+Amazon ECR
+       |
+       | docker pull
+       v
+Amazon EC2
+       |
+       v
+Docker Container
+       |
+       v
+Flask Application
+       |
+       v
+MongoDB Atlas
 ```
 
 ---
 
-# 13. Stage 2 – Python Environment
+# 24. Amazon ECR
 
-The workflow configures Python and installs application dependencies.
+Amazon Elastic Container Registry is used to store Docker images.
 
-Typical steps include:
-
-```bash
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-```
-
-Development/test dependencies such as Pytest and Flake8 are also installed.
-
----
-
-# 14. Stage 3 – Automated Test Suite
-
-The workflow performs code-quality validation using Flake8.
-
-Example:
-
-```bash
-flake8 . \
-  --count \
-  --select=E9,F63,F7,F82 \
-  --show-source \
-  --statistics
-```
-
-The automated test suite is then executed:
-
-```bash
-python3 -m pytest -v test_app.py
-```
-
-If either Flake8 or Pytest fails, the pipeline stops and the application is not deployed.
-
----
-
-# 15. Stage 4 – AWS Authentication
-
-The workflow configures AWS credentials using:
-
-```yaml
-aws-actions/configure-aws-credentials@v4
-```
-
-The AWS credentials are retrieved from GitHub Secrets.
-
-The workflow uses the AWS region:
+The repository used by the pipeline is:
 
 ```text
-us-east-1
+flask-app
 ```
 
----
-
-# 16. Stage 5 – Amazon ECR Login
-
-The Docker image is pushed to Amazon Elastic Container Registry.
-
-The workflow obtains an ECR authentication token using:
-
-```bash
-aws ecr get-login-password
-```
-
-and authenticates Docker against ECR.
-
-Example:
-
-```bash
-aws ecr get-login-password --region us-east-1 |
-docker login \
-  --username AWS \
-  --password-stdin "$ECR_REGISTRY"
-```
-
----
-
-# 17. Stage 6 – Docker Image Build
-
-The application is packaged into a Docker image.
-
-The image is tagged using the Git commit SHA:
-
-```text
-${{ github.sha }}
-```
+The Docker image is tagged using the Git commit SHA.
 
 Example:
 
@@ -475,108 +589,177 @@ Example:
 flask-app:eb2014e7d07b130973be412d12fd77bacef6e15e
 ```
 
-Using the commit SHA provides a unique and traceable image version.
+Using the commit SHA provides version traceability.
 
-This makes it possible to identify exactly which Git commit is running in production.
-
----
-
-# 18. Stage 7 – Push Image to ECR
-
-The Docker image is pushed to Amazon ECR.
-
-Example image structure:
-
-```text
-545931885961.dkr.ecr.us-east-1.amazonaws.com/flask-app:<commit-sha>
-```
-
-This allows EC2 to retrieve the exact image produced by the CI pipeline.
+Every deployed Docker image can be associated with a specific Git commit.
 
 ---
 
-# 19. Stage 8 – EC2 Deployment
+# 25. Amazon EC2
 
-GitHub Actions connects to the EC2 instance using SSH.
+Amazon EC2 is used as the production deployment server.
 
-The deployment uses:
+The EC2 instance contains:
+
+* Docker
+* AWS CLI
+* curl
+* Required application runtime
+
+The Flask Docker container runs on:
 
 ```text
-appleboy/ssh-action
+Port 5000
 ```
 
-The workflow passes the following environment variables:
+The container uses:
 
 ```text
-ECR_REGISTRY
-ECR_REPOSITORY
-IMAGE_TAG
-MONGO_URI
+5000:5000
 ```
 
-The MongoDB URI is therefore available to the remote deployment script without exposing it in source code.
+to expose the Flask application.
 
 ---
 
-# 20. EC2 Deployment Process
+# 26. GitHub Actions
 
-The EC2 deployment performs the following operations.
+The CI/CD workflow is located at:
 
-### Validate variables
-
-The script verifies that required variables exist:
-
-```bash
-if [ -z "$ECR_REGISTRY" ]; then
-    echo "ERROR: ECR_REGISTRY is missing."
-    exit 1
-fi
-
-if [ -z "$MONGO_URI" ]; then
-    echo "ERROR: MONGO_URI GitHub Secret is missing."
-    exit 1
-fi
+```text
+.github/workflows/deploy.yml
 ```
 
-### Verify Docker
+The workflow automates the entire deployment process.
 
-```bash
-docker --version
+---
+
+# 27. CI Pipeline Stages
+
+The CI pipeline performs:
+
+```text
+Checkout
+   |
+   v
+Install Dependencies
+   |
+   v
+Flake8
+   |
+   v
+Pytest
 ```
 
-### Verify AWS CLI
+If either Flake8 or Pytest fails, deployment should not continue.
 
-```bash
-aws --version
+---
+
+# 28. CD Pipeline Stages
+
+After CI succeeds:
+
+```text
+Configure AWS
+     |
+     v
+Login to ECR
+     |
+     v
+Build Docker Image
+     |
+     v
+Push Docker Image
+     |
+     v
+SSH to EC2
+     |
+     v
+Stop Existing Container
+     |
+     v
+Pull New Image
+     |
+     v
+Start New Container
+     |
+     v
+Health Check
 ```
 
-### Login to ECR
+---
+
+# 29. GitHub Actions Secrets
+
+The following GitHub Secrets are required.
+
+| Secret                  | Description                     |
+| ----------------------- | ------------------------------- |
+| `MONGO_URI`             | MongoDB Atlas connection string |
+| `AWS_ACCESS_KEY_ID`     | AWS access key                  |
+| `AWS_SECRET_ACCESS_KEY` | AWS secret key                  |
+| `EC2_HOST_IP`           | EC2 public IP                   |
+| `EC2_SSH_KEY`           | EC2 SSH private key             |
+| `MAIL_USERNAME`         | Email username                  |
+| `MAIL_PASSWORD`         | Email password                  |
+| `NOTIFICATION_EMAIL`    | Notification recipient          |
+
+Secrets are accessed inside GitHub Actions using:
+
+```yaml
+${{ secrets.MONGO_URI }}
+```
+
+For example:
+
+```yaml
+MONGO_URI: ${{ secrets.MONGO_URI }}
+```
+
+---
+
+# 30. AWS ECR Authentication
+
+The EC2 deployment logs into Amazon ECR using:
 
 ```bash
 aws ecr get-login-password \
-  --region us-east-1 |
+  --region us-east-1 | \
   docker login \
   --username AWS \
   --password-stdin "$ECR_REGISTRY"
 ```
 
-### Stop the previous container
+Successful authentication produces:
 
-```bash
-docker stop flask_app_prod || true
-docker rm flask_app_prod || true
+```text
+Login Succeeded
 ```
 
-The `|| true` ensures the deployment does not fail if the container does not already exist.
+---
 
-### Pull the new image
+# 31. Docker Image Deployment
+
+The deployment pulls the exact image associated with the current Git commit:
 
 ```bash
 docker pull \
   "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 ```
 
-### Start the new container
+This guarantees that EC2 runs the image generated by the current CI/CD workflow.
+
+---
+
+# 32. Production Container
+
+The production container is named:
+
+```text
+flask_app_prod
+```
+
+It is started with:
 
 ```bash
 docker run -d \
@@ -589,55 +772,17 @@ docker run -d \
 
 ---
 
-# 21. Deployment Health Check
+# 33. Container Verification
 
-After starting the container, the workflow waits for the Flask application to initialize:
-
-```bash
-sleep 10
-```
-
-It then checks whether the container is running.
-
-If the container is not running, the workflow displays:
-
-* Container status
-* Container logs
-
-The workflow then executes:
+After starting the container, the deployment verifies that it is running:
 
 ```bash
-curl --fail \
-  --silent \
-  --show-error \
-  --connect-timeout 5 \
-  --max-time 15 \
-  http://localhost:5000/health
+docker ps \
+  --filter "name=flask_app_prod" \
+  --filter "status=running"
 ```
 
-A successful response results in:
-
-```text
-DEPLOYMENT HEALTH CHECK PASSED
-```
-
-and:
-
-```text
-EC2 DEPLOYMENT COMPLETED SUCCESSFULLY
-```
-
----
-
-# 22. Failure Handling
-
-If the container crashes or the health check fails, the workflow reports:
-
-```text
-DEPLOYMENT HEALTH CHECK FAILED
-```
-
-The workflow then collects:
+If the container is not running, the deployment displays:
 
 ```bash
 docker ps -a
@@ -649,317 +794,546 @@ and:
 docker logs flask_app_prod
 ```
 
-This makes troubleshooting easier.
-
-For example, if `/health` does not exist, the application returns:
-
-```text
-404
-```
-
-and the deployment is correctly marked as failed.
-
-This demonstrates that the pipeline does not blindly consider a container launch to be a successful deployment.
+The GitHub Actions job then fails.
 
 ---
 
-# 23. Email Notifications
+# 34. Deployment Health Check
 
-The workflow sends email notifications after deployment.
-
-A success notification is triggered when the pipeline completes successfully.
-
-A failure notification is triggered when the deployment fails.
-
-The SMTP configuration uses Gmail.
-
-The credentials are stored in GitHub Secrets:
-
-```text
-MAIL_USERNAME
-MAIL_PASSWORD
-NOTIFICATION_EMAIL
-```
-
-No email password is stored in the source code.
-
----
-
-# 24. Complete CI/CD Flow
-
-The complete process is:
-
-```text
-1. Developer modifies application
-            |
-            v
-2. git push
-            |
-            v
-3. GitHub Actions starts
-            |
-            v
-4. Checkout source code
-            |
-            v
-5. Install Python dependencies
-            |
-            v
-6. Run Flake8
-            |
-            v
-7. Run Pytest
-            |
-       Tests pass?
-        /       \
-      No         Yes
-      |           |
-      v           v
-    STOP      Build Docker image
-                  |
-                  v
-             Tag with SHA
-                  |
-                  v
-             Push to ECR
-                  |
-                  v
-              SSH to EC2
-                  |
-                  v
-            Login to ECR
-                  |
-                  v
-             Stop old app
-                  |
-                  v
-             Pull new image
-                  |
-                  v
-          Start new container
-                  |
-                  v
-            Check container
-                  |
-                  v
-             GET /health
-                  |
-             +----+----+
-             |         |
-           200       Failure
-             |         |
-             v         v
-        Deployment   Show logs
-         Success      + Fail
-             |
-             v
-       Success Email
-```
-
----
-
-# 25. Security Considerations
-
-The project follows several security practices.
-
-### Secrets are not stored in source code
-
-MongoDB credentials, AWS credentials, SSH keys, and email credentials are stored as GitHub Secrets.
-
-### MongoDB URI is passed through environment variables
-
-The application accesses:
-
-```text
-MONGO_URI
-```
-
-at runtime.
-
-### Docker receives MongoDB configuration at runtime
-
-The deployment uses:
+The final deployment gate is:
 
 ```bash
--e "MONGO_URI=$MONGO_URI"
+curl \
+  --fail \
+  --silent \
+  --show-error \
+  --connect-timeout 5 \
+  --max-time 15 \
+  http://localhost:5000/health
 ```
 
-rather than embedding the URI in the Docker image.
-
-### Git commit SHA is used for image tagging
-
-This provides traceability between:
-
-```text
-Git commit
-    |
-    v
-Docker image
-    |
-    v
-EC2 deployment
-```
-
-### Sensitive values are not printed
-
-The deployment logs only report:
-
-```text
-MongoDB configuration: available
-```
-
-rather than printing the actual MongoDB URI.
-
----
-
-# 26. Required GitHub Secrets
-
-Configure the following secrets under:
-
-```text
-GitHub Repository
-→ Settings
-→ Secrets and variables
-→ Actions
-→ Repository secrets
-```
-
-| Secret                  | Purpose                         |
-| ----------------------- | ------------------------------- |
-| `MONGO_URI`             | MongoDB Atlas connection string |
-| `AWS_ACCESS_KEY_ID`     | AWS authentication              |
-| `AWS_SECRET_ACCESS_KEY` | AWS authentication              |
-| `EC2_HOST_IP`           | EC2 public IP address           |
-| `EC2_SSH_KEY`           | SSH private key                 |
-| `MAIL_USERNAME`         | SMTP username                   |
-| `MAIL_PASSWORD`         | SMTP password/app password      |
-| `NOTIFICATION_EMAIL`    | Notification recipient          |
-
-Never commit these values into Git.
-
----
-
-# 27. Local Development
-
-Create and activate a Python virtual environment:
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
-```
-
-Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-Set the MongoDB connection:
-
-```bash
-export MONGO_URI='your-mongodb-connection-string'
-```
-
-Run the application:
-
-```bash
-python app.py
-```
-
-Test the application:
-
-```bash
-curl http://127.0.0.1:5000/
-```
-
-Test the health endpoint:
-
-```bash
-curl http://127.0.0.1:5000/health
-```
-
-Expected health response:
+Successful response:
 
 ```json
-{
-  "status": "healthy"
-}
+{"status": "healthy"}
+```
+
+The pipeline prints:
+
+```text
+==========================================
+DEPLOYMENT HEALTH CHECK PASSED
+==========================================
+
+==========================================
+EC2 DEPLOYMENT COMPLETED SUCCESSFULLY
+==========================================
 ```
 
 ---
 
-# 28. Testing
+# 35. Deployment Failure Handling
 
-Run Flake8:
+If the health check fails, the deployment prints:
+
+```text
+==========================================
+DEPLOYMENT HEALTH CHECK FAILED
+==========================================
+```
+
+It then displays the container status:
+
+```bash
+docker ps -a
+```
+
+and container logs:
+
+```bash
+docker logs flask_app_prod
+```
+
+Finally:
+
+```bash
+exit 1
+```
+
+causes the GitHub Actions deployment stage to fail.
+
+This prevents an unhealthy deployment from being reported as successful.
+
+---
+
+# 36. Example Deployment Flow
+
+A successful deployment follows:
+
+```text
+Developer
+    |
+    | git push
+    v
+GitHub
+    |
+    v
+GitHub Actions
+    |
+    +--> Checkout
+    |
+    +--> Install Dependencies
+    |
+    +--> Flake8
+    |
+    +--> Pytest
+    |
+    +--> Configure AWS
+    |
+    +--> Login to ECR
+    |
+    +--> Docker Build
+    |
+    +--> Docker Push
+    |
+    +--> SSH to EC2
+    |
+    +--> Stop Old Container
+    |
+    +--> Pull New Image
+    |
+    +--> Start New Container
+    |
+    +--> Check Container
+    |
+    +--> /health
+    |
+    v
+Production Deployment
+```
+
+---
+
+# 37. Git Workflow
+
+Check the repository:
+
+```bash
+git status
+```
+
+Add changes:
+
+```bash
+git add .
+```
+
+Commit:
+
+```bash
+git commit -m "Update application"
+```
+
+Push:
+
+```bash
+git push
+```
+
+After the push, GitHub Actions automatically starts the CI/CD pipeline.
+
+---
+
+# 38. Handling Git Push Rejection
+
+If Git reports:
+
+```text
+Updates were rejected because the remote contains work
+that you do not have locally.
+```
+
+first fetch the remote changes:
+
+```bash
+git fetch origin
+```
+
+Review the difference:
+
+```bash
+git log --oneline --left-right HEAD...origin/main
+```
+
+Then integrate the remote changes:
+
+```bash
+git pull --rebase origin main
+```
+
+If there are conflicts, resolve them and continue the rebase.
+
+Finally:
+
+```bash
+git push
+```
+
+---
+
+# 39. CI/CD Verification
+
+The following evidence can be used to demonstrate that the pipeline works.
+
+### Local Application
+
+```bash
+curl --fail http://localhost:5000/health
+```
+
+Expected:
+
+```json
+{"status": "healthy"}
+```
+
+### Docker
+
+```bash
+docker ps
+```
+
+Expected:
+
+```text
+flask_app_container
+```
+
+### Production EC2
+
+```bash
+docker ps
+```
+
+Expected:
+
+```text
+flask_app_prod
+```
+
+### Production Health Check
+
+```bash
+curl --fail http://localhost:5000/health
+```
+
+Expected:
+
+```json
+{"status": "healthy"}
+```
+
+### GitHub Actions
+
+The Actions page should show a successful workflow run.
+
+### Amazon ECR
+
+The ECR repository should contain the Docker image tagged with the Git commit SHA.
+
+---
+
+# 40. Screenshot Evidence
+
+The following screenshots should be included as evidence for the project.
+
+## Screenshot 1 – GitHub Repository
+
+Capture the GitHub repository showing:
+
+* Source files
+* Dockerfile
+* Requirements file
+* GitHub Actions workflow
+
+**Caption:**
+
+> GitHub repository containing the Flask application and CI/CD configuration.
+
+---
+
+## Screenshot 2 – Flask Application
+
+Capture:
+
+```bash
+sed -n '1,80p' app.py
+```
+
+The screenshot should show:
+
+```python
+app.config["MONGO_URI"] = os.getenv("MONGO_URI")
+```
+
+and:
+
+```python
+@app.route("/health")
+def health():
+    return {"status": "healthy"}, 200
+```
+
+**Caption:**
+
+> Flask application configured with MongoDB and a deployment health-check endpoint.
+
+---
+
+## Screenshot 3 – Pytest
+
+Run:
+
+```bash
+python3 -m pytest -v test_app.py
+```
+
+Capture the successful test result.
+
+**Caption:**
+
+> Automated Pytest test suite executed successfully.
+
+---
+
+## Screenshot 4 – Flake8
+
+Run:
 
 ```bash
 flake8 . \
+  --exclude=venv \
   --count \
   --select=E9,F63,F7,F82 \
   --show-source \
   --statistics
 ```
 
-Run Pytest:
+Capture the successful result.
 
-```bash
-python3 -m pytest -v test_app.py
-```
+**Caption:**
 
-Both checks must pass before the application is deployed.
+> Flake8 code validation completed successfully.
 
 ---
 
-# 29. Deployment
+## Screenshot 5 – Docker Image
 
-The normal deployment process is simply:
+Run:
 
 ```bash
-git add .
-git commit -m "your commit message"
-git push origin main
+docker images
 ```
 
-GitHub Actions automatically starts the CI/CD pipeline.
+Capture the image:
 
-No manual Docker image build or EC2 deployment is required.
+```text
+flask-practice-app
+```
+
+**Caption:**
+
+> Docker image successfully created for the Flask application.
 
 ---
 
-# 30. Troubleshooting
+## Screenshot 6 – Docker Container
 
-## `MONGO_URI GitHub Secret is missing`
+Run:
 
-Verify that:
-
-```text
-MONGO_URI
+```bash
+docker ps
 ```
 
-exists under GitHub:
+Capture:
 
 ```text
-Settings
-→ Secrets and variables
-→ Actions
-→ Repository secrets
-```
-
-The workflow should contain:
-
-```yaml
-MONGO_URI: ${{ secrets.MONGO_URI }}
+flask_app_container
 ```
 
 and:
 
-```yaml
-envs: ECR_REGISTRY,ECR_REPOSITORY,IMAGE_TAG,MONGO_URI
+```text
+0.0.0.0:5000->5000/tcp
 ```
+
+**Caption:**
+
+> Flask application running inside a Docker container.
 
 ---
 
-## MongoDB DNS error
+## Screenshot 7 – Local Health Check
+
+Run:
+
+```bash
+curl --fail http://localhost:5000/health
+```
+
+Capture:
+
+```json
+{"status": "healthy"}
+```
+
+**Caption:**
+
+> Local Docker application successfully passes the health check.
+
+---
+
+## Screenshot 8 – GitHub Actions
+
+Open:
+
+```text
+GitHub → Repository → Actions
+```
+
+Open the latest workflow run.
+
+Capture the successful workflow.
+
+**Caption:**
+
+> GitHub Actions CI/CD workflow completed successfully.
+
+---
+
+## Screenshot 9 – Amazon ECR
+
+Open:
+
+```text
+AWS Console → ECR → Repositories → flask-app
+```
+
+Capture the Docker image and tag.
+
+**Caption:**
+
+> Docker image successfully stored in Amazon ECR.
+
+---
+
+## Screenshot 10 – EC2 Container
+
+SSH into EC2 and run:
+
+```bash
+docker ps
+```
+
+Capture:
+
+```text
+flask_app_prod
+```
+
+and:
+
+```text
+0.0.0.0:5000->5000/tcp
+```
+
+**Caption:**
+
+> Production Flask container successfully running on Amazon EC2.
+
+---
+
+## Screenshot 11 – EC2 Health Check
+
+On EC2 run:
+
+```bash
+curl --fail http://localhost:5000/health
+```
+
+Expected:
+
+```json
+{"status": "healthy"}
+```
+
+**Caption:**
+
+> Production Flask application successfully passes the EC2 health check.
+
+---
+
+## Screenshot 12 – Live Application
+
+Open:
+
+```text
+http://EC2_PUBLIC_IP:5000/
+```
+
+Capture the running Student Management System.
+
+**Caption:**
+
+> Flask Student Management application successfully deployed and accessible from the EC2 server.
+
+---
+
+# 41. Recommended Screenshot Order
+
+For the final assignment/documentation, use this order:
+
+```text
+1. GitHub Repository
+2. Flask Application Code
+3. Pytest Results
+4. Flake8 Results
+5. Docker Image
+6. Docker Container
+7. Local Health Check
+8. GitHub Actions Successful Run
+9. Amazon ECR Image
+10. EC2 Docker Container
+11. EC2 Health Check
+12. Live Application
+```
+
+This provides evidence for the complete CI/CD lifecycle.
+
+---
+
+# 42. Troubleshooting
+
+## MongoDB URI Missing
+
+If the application reports:
+
+```text
+ValueError:
+You must specify a URI or set the MONGO_URI Flask config variable
+```
+
+check:
+
+```bash
+echo "$MONGO_URI"
+```
+
+Make sure the environment variable is configured.
+
+---
+
+## Invalid MongoDB Cluster
 
 If the application reports:
 
@@ -968,53 +1342,53 @@ The DNS query name does not exist:
 _mongodb._tcp.your_cluster.mongodb.net
 ```
 
-the MongoDB URI is using an invalid or placeholder cluster hostname.
+the MongoDB connection string is still using a placeholder or incorrect cluster address.
 
-Retrieve the correct connection string from MongoDB Atlas.
+Replace it with the actual MongoDB Atlas connection string.
 
 ---
 
-## Port 5000 already in use
+## MongoDB Database Name Missing
 
-Check:
+Verify the URI contains the database name:
 
-```bash
-sudo ss -ltnp | grep ':5000'
+```text
+mongodb+srv://username:password@cluster.mongodb.net/student_db
 ```
 
-Check Docker:
+The database portion should be:
+
+```text
+student_db
+```
+
+---
+
+## Port 5000 Already in Use
+
+Check:
 
 ```bash
 docker ps
 ```
 
-Stop a local container if necessary:
+Stop the existing container if required:
 
 ```bash
 docker stop flask_app_container
 ```
 
----
-
-## Health check returns 404
-
-Verify that Flask contains:
-
-```python
-@app.route("/health")
-def health():
-    return {"status": "healthy"}, 200
-```
-
-Then test:
+Remove it:
 
 ```bash
-curl http://localhost:5000/health
+docker rm flask_app_container
 ```
+
+Then start the new container.
 
 ---
 
-## Container is not running
+## Container Not Running
 
 Check:
 
@@ -1022,7 +1396,13 @@ Check:
 docker ps -a
 ```
 
-Then inspect logs:
+Then:
+
+```bash
+docker logs flask_app_container
+```
+
+For production:
 
 ```bash
 docker logs flask_app_prod
@@ -1030,142 +1410,190 @@ docker logs flask_app_prod
 
 ---
 
-## ECR image pull fails
+## Health Check Returns 404
 
-Verify:
+If:
 
-* AWS credentials
-* AWS region
-* ECR repository name
-* EC2 IAM permissions
-* ECR login
+```bash
+curl http://localhost:5000/health
+```
+
+returns:
+
+```text
+404
+```
+
+verify that `app.py` contains:
+
+```python
+@app.route("/health")
+def health():
+    return {"status": "healthy"}, 200
+```
+
+Then rebuild and redeploy the Docker image.
 
 ---
 
-# 31. CI/CD Benefits
+# 43. Security Best Practices
 
-This pipeline provides several benefits.
+The following security practices are followed:
+
+* MongoDB credentials are stored as secrets.
+* AWS credentials are stored as GitHub Secrets.
+* SSH private keys are stored as GitHub Secrets.
+* `.env` is excluded from Git.
+* Credentials are not hard-coded into Python source code.
+* Credentials are not printed in deployment logs.
+* Docker images are versioned using Git commit SHA.
+* Production deployment is verified using a health check.
+
+---
+
+# 44. Benefits of the CI/CD Pipeline
+
+This implementation provides several benefits.
 
 ### Automation
 
-Every push can automatically trigger validation and deployment.
+Deployment happens automatically after a successful Git push.
 
 ### Consistency
 
-The same Docker image built by CI is deployed to EC2.
+The same deployment process is executed every time.
+
+### Faster Delivery
+
+Developers do not need to manually build and deploy Docker images.
+
+### Quality Control
+
+Automated tests and Flake8 checks run before deployment.
 
 ### Traceability
 
-Each image is tagged with the Git commit SHA.
-
-### Security
-
-Sensitive configuration is managed through GitHub Secrets.
+Docker images are tagged using Git commit SHA.
 
 ### Reliability
 
-The deployment does not automatically succeed just because the Docker container started.
+The deployment includes a health-check gate.
 
-The `/health` endpoint must return HTTP `200`.
+### Failure Detection
 
-### Faster deployment
+Container logs are automatically displayed when deployment fails.
 
-Manual SSH, Docker pulls, and container restarts are replaced by an automated workflow.
+### Security
 
-### Failure visibility
-
-Container status and logs are collected when deployment fails.
+Sensitive configuration is stored in GitHub Secrets.
 
 ---
 
-# 32. Future Improvements
-
-The current implementation can be improved further by:
-
-1. Replacing Flask's development server with Gunicorn.
-2. Adding Docker image vulnerability scanning.
-3. Adding dependency vulnerability scanning.
-4. Using AWS IAM roles instead of long-lived AWS access keys where possible.
-5. Using AWS Systems Manager instead of SSH for EC2 deployment.
-6. Implementing blue-green or rolling deployments.
-7. Adding CloudWatch monitoring and alerts.
-8. Adding HTTPS through an Application Load Balancer.
-9. Adding a staging environment before production.
-10. Adding automated rollback if the health check fails.
-11. Using Docker health checks.
-12. Adding stronger test coverage.
-
----
-
-# 33. Final Deployment Verification
-
-A successful deployment should finish with output similar to:
+# 45. Final CI/CD Architecture
 
 ```text
-Starting EC2 Deployment
+                         DEVELOPER
+                             |
+                             | git push
+                             v
+                    +-------------------+
+                    | GitHub Repository  |
+                    +-------------------+
+                             |
+                             v
+                    +-------------------+
+                    | GitHub Actions     |
+                    +-------------------+
+                             |
+             +---------------+---------------+
+             |               |               |
+             v               v               v
+        Flake8            Pytest       Docker Build
+             |               |               |
+             +---------------+---------------+
+                             |
+                             v
+                    +-------------------+
+                    |   Amazon ECR       |
+                    |   flask-app        |
+                    +-------------------+
+                             |
+                             | docker pull
+                             v
+                    +-------------------+
+                    |    Amazon EC2      |
+                    +-------------------+
+                             |
+                             v
+                    +-------------------+
+                    | Docker Container   |
+                    | flask_app_prod    |
+                    +-------------------+
+                             |
+                             v
+                    +-------------------+
+                    | Flask Application  |
+                    +-------------------+
+                             |
+                             v
+                    +-------------------+
+                    |   MongoDB Atlas    |
+                    +-------------------+
 
-ECR Registry: <ECR_REGISTRY>
-ECR Repository: flask-app
-Image Tag: <GIT_COMMIT_SHA>
-MongoDB configuration: available
-
-Checking Docker...
-Docker version ...
-
-Checking AWS CLI...
-aws-cli/...
-
-ECR login successful.
-
-Pulling new Docker image...
-Docker image pulled successfully.
-
-Starting new Flask application container...
-New container started.
-
-Application container is running.
-
-Running deployment health check...
-
-{"status":"healthy"}
-
-==========================================
-DEPLOYMENT HEALTH CHECK PASSED
-==========================================
-
-==========================================
-EC2 DEPLOYMENT COMPLETED SUCCESSFULLY
-==========================================
+                             |
+                             v
+                    /health → HTTP 200
+                             |
+                             v
+                    DEPLOYMENT SUCCESS
 ```
 
 ---
 
-# 34. Conclusion
+# 46. Conclusion
 
-This project implements a complete CI/CD pipeline for a Flask application using GitHub Actions and AWS.
+The project successfully implements an end-to-end CI/CD pipeline for a Flask application.
 
-The pipeline automatically validates application code, runs tests, builds and versions a Docker image, pushes the image to Amazon ECR, deploys it to Amazon EC2, provides MongoDB configuration securely through GitHub Secrets, and verifies the running application through a health-check endpoint.
-
-The health-check gate ensures that a deployment is considered successful only when the application is actually running and responding correctly.
-
-The implementation therefore demonstrates the key principles of modern CI/CD:
+The pipeline automatically:
 
 ```text
 Code
-  ↓
-Build
-  ↓
+ ↓
 Test
-  ↓
-Package
-  ↓
-Publish
-  ↓
+ ↓
+Validate
+ ↓
+Build
+ ↓
+Push
+ ↓
 Deploy
-  ↓
+ ↓
 Verify
-  ↓
-Notify
 ```
 
-This provides an automated, repeatable, traceable, and secure deployment process for the Flask application.
+The Flask application is containerized using Docker, stored in Amazon ECR, deployed to Amazon EC2, connected to MongoDB Atlas, and verified using an automated `/health` endpoint.
+
+The final result is a repeatable and automated deployment process where every successful Git push can be validated and deployed without manually performing each deployment step.
+
+---
+
+## Final Evidence
+
+The most important final evidence is:
+
+```text
+✓ Pytest passed
+✓ Flake8 passed
+✓ Docker image created
+✓ Docker image pushed to ECR
+✓ EC2 container running
+✓ /health returned {"status": "healthy"}
+✓ GitHub Actions workflow succeeded
+✓ Flask application accessible from browser
+```
+
+**This demonstrates a complete working CI/CD pipeline from source-code commit to production deployment.**
+
+```
+```
