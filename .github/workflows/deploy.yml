@@ -43,36 +43,50 @@ jobs:
 
     - name: 6. Build Docker Image (Commit SHA Tagged)
       id: build
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPOSITORY: srinivas/ecr-repo
-        IMAGE_TAG: ${{ github.sha }}
       run: |
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker build -t ://amazonaws.com{{ github.sha }} .
 
     - name: 7. Push Image to ECR
       id: push
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPOSITORY: srinivas/ecr-repo
-        IMAGE_TAG: ${{ github.sha }}
       run: |
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        docker push ://amazonaws.com{{ github.sha }}
 
-    - name: 8. Deploy to EC2 via Safe SSH Action & Verify Health
-      id: deploy
-      uses: appleboy/ssh-action@v1.0.3
+    - name: 8. Setup Secure Native SSH Key Agent
+      uses: shimataro/ssh-key-action@v2
       with:
-        host: 3.92.51.26
-        username: ec2-user
         key: ${{ secrets.EC2_SSH_KEY }}
-        script: |
+        name: id_rsa 
+        known_hosts: 3.92.51.26
+        if_key_exists: replace
+
+    - name: 9. Deploy to EC2 via Native OpenSSH & Perform Health Check Verification
+      id: deploy
+      env:
+        EC2_HOST: 3.92.51.26
+      run: |
+        # Pre-seed host signature verification keys to prevent automated terminal blocking loops
+        ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
+        
+        # Native shell execution using explicit RSA algorithm overrides for AL2023 compatibility
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -o KexAlgorithms=+curve25519-sha256 -o PubkeyAcceptedKeyTypes=+ssh-rsa ec2-user@$EC2_HOST << 'EEF'
+          # Explicitly extend paths so shell daemons find docker and aws-cli execution binaries smoothly
+          export PATH=$PATH:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
+          
+          # Authenticate against AWS ECR directly using explicit string definitions
           aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ://amazonaws.com
+          
+          # Clean teardown of existing running container configurations
           docker stop flask_app_prod || true
           docker rm flask_app_prod || true
-          docker pull ://amazonaws.com/srinivas/ecr-repo:${{ github.sha }}
-          docker run -d -p 5000:5000 --name flask_app_prod ://amazonaws.com/srinivas/ecr-repo:${{ github.sha }}
-          sleep 5
+          
+          # Pull trace-tagged image directly using explicit string definitions
+          docker pull ://amazonaws.com{{ github.sha }}
+          
+          # Launch production service mapping port 5000 directly using explicit string definitions
+          docker run -d -p 5000:5000 --name flask_app_prod ://amazonaws.com{{ github.sha }}
+          
+          # Deploy-Verification Health Check Gate
+          sleep 7
           echo "Executing application deployment verification check..."
           if curl -f http://localhost:5000/; then
             echo "Deployment verification check passed successfully!"
@@ -80,8 +94,9 @@ jobs:
             echo "CRITICAL: Health verification failed!"
             exit 1
           fi
+        EEF
 
-    - name: 9. Send Success Notification Email
+    - name: 10. Send Success Notification Email
       if: success()
       uses: dawidd6/action-send-mail@v3
       env:
@@ -106,7 +121,7 @@ jobs:
           
           Review Full Workflow Logs: https://github.com{{ github.run_id }}
 
-    - name: 10. Send Failure Notification Email
+    - name: 11. Send Failure Notification Email
       if: failure()
       uses: dawidd6/action-send-mail@v3
       env:
