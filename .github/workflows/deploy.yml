@@ -59,27 +59,22 @@ jobs:
       run: |
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-    - name: 8. Setup Secure Native SSH Key Agent
-      uses: shimataro/ssh-key-action@v2
-      with:
-        key: ${{ secrets.EC2_SSH_KEY }}
-        name: id_rsa # Correctly aligns with OpenSSH's native key handler name
-        known_hosts: ${{ secrets.EC2_HOST_IP }}
-        if_key_exists: replace
-
-    - name: 9. Deploy to EC2 & Perform Health Check Verification Gate
+    - name: 8. Deploy to EC2 via Safe SSH & Perform Health Check Verification Gate
       id: deploy
       env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPOSITORY: srinivas/ecr-repo
-        IMAGE_TAG: ${{ github.sha }}
         EC2_HOST: ${{ secrets.EC2_HOST_IP }}
+        BASE64_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
       run: |
-        # Inject target host identity into known hosts to prevent user interaction blocks
+        mkdir -p ~/.ssh
+        # Securely decode your Base64 secret string cleanly into a native Linux identity file
+        echo "$BASE64_SSH_KEY" | base64 --decode > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        
+        # Disable strict host key checking to prevent automated run interactive prompts
         ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
         
-        # Execute deployment script payload over the native shell connection using the managed key agent
-        ssh -o StrictHostKeyChecking=no ec2-user@$EC2_HOST << 'EEF'
+        # SSH tunnel using explicit RSA overrides required for Amazon Linux 2023 compatibility
+        ssh -i ~/.ssh/id_rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -o HostKeyAlgorithms=+ssh-rsa ec2-user@$EC2_HOST << 'EEF'
           aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ://amazonaws.com
           docker stop flask_app_prod || true
           docker rm flask_app_prod || true
@@ -95,7 +90,7 @@ jobs:
           fi
         EEF
 
-    - name: 10. Send Success Notification Email
+    - name: 9. Send Success Notification Email
       if: success()
       uses: dawidd6/action-send-mail@v3
       with:
@@ -113,13 +108,11 @@ jobs:
           
           • Deployed Branch: ${{ github.ref_name }}
           • Traceable Commit SHA: ${{ github.sha }}
-          • Pushed ECR Image Tag: ${{ github.sha }}
           • Target Compute Target: AWS EC2 Instance (${{ secrets.EC2_HOST_IP }})
-          • Verification Gate: Application root responded with standard HTTP 200.
           
           Review Full Workflow Logs: https://github.com{{ github.run_id }}
 
-    - name: 11. Send Failure Notification Email
+    - name: 10. Send Failure Notification Email
       if: failure()
       uses: dawidd6/action-send-mail@v3
       with:
