@@ -62,17 +62,17 @@ jobs:
     - name: 9. Deploy to EC2 via Native OpenSSH & Perform Health Check Verification
       id: deploy
       env:
-        EC2_HOST: 3.92.51.26
+        COMMIT_HASH: ${{ github.sha }}
       run: |
         # Pre-seed host signature verification keys to prevent automated terminal blocking loops
-        ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
+        ssh-keyscan -H 3.92.51.26 >> ~/.ssh/known_hosts
         
         # Native shell execution using explicit RSA algorithm overrides for AL2023 compatibility
-        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -o KexAlgorithms=+curve25519-sha256 -o PubkeyAcceptedKeyTypes=+ssh-rsa ec2-user@$EC2_HOST << 'EEF'
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -o KexAlgorithms=+curve25519-sha256 -o PubkeyAcceptedKeyTypes=+ssh-rsa ec2-user@3.92.51.26 << EEF
           # Explicitly extend paths so shell daemons find docker and aws-cli execution binaries smoothly
           export PATH=$PATH:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
           
-          # Authenticate against AWS ECR directly using explicit string definitions
+          # Authenticate against AWS ECR
           aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ://amazonaws.com
           
           # Clean teardown of existing running container configurations
@@ -80,10 +80,10 @@ jobs:
           docker rm flask_app_prod || true
           
           # Pull trace-tagged image directly using explicit string definitions
-          docker pull ://amazonaws.com{{ github.sha }}
+          docker pull ://amazonaws.comCOMMIT_HASH
           
           # Launch production service mapping port 5000 directly using explicit string definitions
-          docker run -d -p 5000:5000 --name flask_app_prod ://amazonaws.com{{ github.sha }}
+          docker run -d -p 5000:5000 --name flask_app_prod ://amazonaws.comCOMMIT_HASH
           
           # Deploy-Verification Health Check Gate
           sleep 7
@@ -99,17 +99,13 @@ jobs:
     - name: 10. Send Success Notification Email
       if: success()
       uses: dawidd6/action-send-mail@v3
-      env:
-        SMTP_USER: ${{ secrets.MAIL_USERNAME }}
-        SMTP_PASS: ${{ secrets.MAIL_PASSWORD }}
-        MAIL_TO: ${{ secrets.NOTIFICATION_EMAIL }}
       with:
         server_address: ://gmail.com
         server_port: 465
-        username: ${{ env.SMTP_USER }}
-        password: ${{ env.SMTP_PASS }}
+        username: ${{ secrets.MAIL_USERNAME }}
+        password: ${{ secrets.MAIL_PASSWORD }}
         subject: "SUCCESS: CI/CD Pipeline Deployed Successfully"
-        to: ${{ env.MAIL_TO }}
+        to: ${{ secrets.NOTIFICATION_EMAIL }}
         from: GitHub Pipeline Monitor <noreply@github.com>
         body: |
           Pipeline Run Status: SUCCESS
@@ -124,17 +120,13 @@ jobs:
     - name: 11. Send Failure Notification Email
       if: failure()
       uses: dawidd6/action-send-mail@v3
-      env:
-        SMTP_USER: ${{ secrets.MAIL_USERNAME }}
-        SMTP_PASS: ${{ secrets.MAIL_PASSWORD }}
-        MAIL_TO: ${{ secrets.NOTIFICATION_EMAIL }}
       with:
         server_address: ://gmail.com
         server_port: 465
-        username: ${{ env.SMTP_USER }}
-        password: ${{ env.SMTP_PASS }}
+        username: ${{ secrets.MAIL_USERNAME }}
+        password: ${{ secrets.MAIL_PASSWORD }}
         subject: "FAILURE: CI/CD Pipeline Execution Blocked"
-        to: ${{ env.MAIL_TO }}
+        to: ${{ secrets.NOTIFICATION_EMAIL }}
         from: GitHub Pipeline Monitor <noreply@github.com>
         body: |
           Pipeline Run Status: FAILED
