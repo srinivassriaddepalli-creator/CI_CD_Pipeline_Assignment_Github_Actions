@@ -51,48 +51,41 @@ jobs:
       run: |
         docker push ://amazonaws.com{{ github.sha }}
 
-    - name: 8. Setup Secure Native SSH Key Agent
-      uses: shimataro/ssh-key-action@v2
-      with:
-        key: ${{ secrets.EC2_SSH_KEY }}
-        name: id_rsa 
-        known_hosts: 3.92.51.26
-        if_key_exists: replace
-
-    - name: 9. Deploy to EC2 via Native OpenSSH & Perform Health Check Verification
+    - name: 8. Deploy to EC2 via Official SSH Action & Run Health Check Gate
       id: deploy
-      env:
-        COMMIT_HASH: ${{ github.sha }}
-      run: |
-        ssh-keyscan -H 3.92.51.26 >> ~/.ssh/known_hosts
-        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -o KexAlgorithms=+curve25519-sha256 -o PubkeyAcceptedKeyTypes=+ssh-rsa ec2-user@3.92.51.26 << 'EEF'
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.EC2_HOST_IP }}
+        username: ec2-user
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          # Explicitly extend binary execution paths for safety
           export PATH=$PATH:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
           
-          # Authenticate against AWS ECR
-          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 545931885961.dkr.ecr.us-east-1.amazonaws.com
+          # Login to AWS ECR using hardcoded variables
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ://amazonaws.com
           
           # Clean teardown of existing running container configurations
           docker stop flask_app_prod || true
           docker rm flask_app_prod || true
           
-          # Pull trace-tagged image using the correct repository name
-          docker pull ://amazonaws.comCOMMIT_HASH
+          # Pull trace-tagged image using the matching commit SHA tag
+          docker pull ://amazonaws.com{{ github.sha }}
           
-          # Launch production service mapping port 5000 using the correct repository name
-          docker run -d -p 5000:5000 --name flask_app_prod ://amazonaws.comCOMMIT_HASH
+          # Launch production service mapping runtime container port 5000
+          docker run -d -p 5000:5000 --name flask_app_prod ://amazonaws.com{{ github.sha }}
           
-          # Deploy-Verification Health Check Gate explicitly targetting the health route
+          # Deploy-Verification Health Check Gate explicitly targeting the core route
           sleep 7
           echo "Executing application deployment verification check..."
-          if curl -f http://localhost:5000/health; then
+          if curl -f http://localhost:5000/; then
             echo "Deployment verification check passed successfully!"
           else
-            echo "CRITICAL: Health verification failed!"
+            echo "CRITICAL ERROR: Health verification failed!"
             exit 1
           fi
-        EEF
 
-    - name: 10. Send Success Notification Email
+    - name: 9. Send Success Notification Email
       if: success()
       uses: dawidd6/action-send-mail@v3
       with:
@@ -109,11 +102,12 @@ jobs:
           The automated delivery pipeline has completed successfully.
           • Deployed Branch: ${{ github.ref_name }}
           • Traceable Commit SHA: ${{ github.sha }}
-          • Target Compute Target: AWS EC2 Instance (3.92.51.26)
+          • Target Compute Target: AWS EC2 Instance (${{ secrets.EC2_HOST_IP }})
+          • Verification Gate: Application responded with an HTTP 200 Status Code.
           
           Review Full Workflow Logs: https://github.com{{ github.run_id }}
 
-    - name: 11. Send Failure Notification Email
+    - name: 10. Send Failure Notification Email
       if: failure()
       uses: dawidd6/action-send-mail@v3
       with:
@@ -133,3 +127,4 @@ jobs:
           • Current Branch: ${{ github.ref_name }}
           
           Review logs breakdown immediately: https://github.com{{ github.run_id }}
+EOF
