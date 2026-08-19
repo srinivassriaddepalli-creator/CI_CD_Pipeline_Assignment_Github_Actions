@@ -1,20 +1,144 @@
-cat << 'EOF' > test_app.py
-import pytest
-from app import app
+name: Graded DevOps CI/CD Pipeline
 
-@pytest.fixture
-def client():
-    app.config['TESTING'] = True
-    with app.test_client() as client:
-        yield client
+on:
+  push:
+    branches:
+      - main
+      - master
 
-def test_home_route(client):
-    """Test that the application home route evaluates without crashing."""
-    response = client.get('/')
-    assert response is not None
+jobs:
+  devops-pipeline:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 1. Checkout Source Code
+      id: checkout
+      uses: actions/checkout@v4
 
-def test_health_endpoint(client):
-    """Ensure basic application interface routing evaluates properly."""
-    response = client.get('/')
-    assert response.status_code in [200, 302, 404]
-EOF
+    - name: 2. Install Dependencies
+      id: dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        pip install -r requirements.txt pytest flake8
+
+    - name: 3. Run Automated Test Suite
+      id: test
+      env:
+        MONGO_URI: mongodb://localhost:27017/test_db
+      run: |
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        pytest -v test_app.py
+
+    - name: 4. Configure AWS Credentials
+      id: aws-auth
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+
+    - name: 5. Log in to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: 6. Build Docker Image (Commit SHA Tagged)
+      id: build
+      env:
+        ECR_REGISTRY: ://amazonaws.com
+        ECR_REPOSITORY: srinivas/ecr-repo
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+
+    - name: 7. Push Image to ECR
+      id: push
+      env:
+        ECR_REGISTRY: ://amazonaws.com
+        ECR_REPOSITORY: srinivas/ecr-repo
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+    - name: 8. Deploy to EC2 & Perform Health Check Verification Gate
+      id: deploy
+      uses: appleboy/ssh-action@v1.0.3
+      env:
+        ECR_REGISTRY: ://amazonaws.com
+        ECR_REPOSITORY: srinivas/ecr-repo
+        IMAGE_TAG: ${{ github.sha }}
+      with:
+        host: ${{ secrets.EC2_HOST_IP }}
+        username: ubuntu
+        key: ${{ secrets.EC2_SSH_KEY }}
+        envs: ECR_REGISTRY,ECR_REPOSITORY,IMAGE_TAG
+        script: |
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_REGISTRY
+          docker stop flask_app_prod || true
+          docker rm flask_app_prod || true
+          docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker run -d -p 5000:5000 --name flask_app_prod $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          sleep 5
+          echo "Executing /health verification probe..."
+          if curl -f http://localhost:5000/; then
+            echo "Deployment verification check passed successfully!"
+          else
+            echo "CRITICAL: Health verification failed!"
+            exit 1
+          fi
+
+    - name: 9. Send Success Notification Email
+      if: success()
+      uses: dawidd6/action-send-mail@v3
+      with:
+        server_address: ://gmail.com
+        server_port: 465
+        username: ${{ secrets.MAIL_USERNAME }}
+        password: ${{ secrets.MAIL_PASSWORD }}
+        subject: "✅ [SUCCESS] CI/CD Pipeline Deployed Successfully"
+        to: ${{ secrets.NOTIFICATION_EMAIL }}
+        from: GitHub Pipeline Monitor <noreply@github.com>
+        body: |
+          🚀 Pipeline Run Status: SUCCESS
+          ------------------------------------------
+          The automated delivery pipeline has completed successfully.
+          
+          • Deployed Branch: ${{ github.ref_name }}
+          • Traceable Commit SHA: ${{ github.sha }}
+          • Pushed ECR Image Tag: ${{ github.sha }}
+          • Target Compute Target: AWS EC2 Instance (${{ secrets.EC2_HOST_IP }})
+          • Verification Gate: Application root responded with standard HTTP 200.
+          
+          Review Full Workflow Logs: https://github.com{{ github.run_id }}
+
+    - name: 10. Send Failure Notification Email
+      if: failure()
+      uses: dawidd6/action-send-mail@v3
+      with:
+        server_address: ://gmail.com
+        server_port: 465
+        username: ${{ secrets.MAIL_USERNAME }}
+        password: ${{ secrets.MAIL_PASSWORD }}
+        subject: "❌ [FAILURE] CI/CD Pipeline Execution Blocked"
+        to: ${{ secrets.NOTIFICATION_EMAIL }}
+        from: GitHub Pipeline Monitor <noreply@github.com>
+        body: |
+          ❌ Pipeline Run Status: FAILED
+          ------------------------------------------
+          The automated pipeline run has failed and stopped early.
+          
+          • Target Repository: ${{ github.repository }}
+          • Broken Commit SHA: ${{ github.sha }}
+          • Current Branch: ${{ github.ref_name }}
+          
+          • GRANULAR STAGE DIAGNOSTIC METRICS:
+            - Checkout: ${{ steps.checkout.outcome }}
+            - Install Dependencies: ${{ steps.dependencies.outcome }}
+            - Test Suite Gate: ${{ steps.test.outcome }}
+            - AWS Authentication: ${{ steps.aws-auth.outcome }}
+            - ECR Registry Login: ${{ steps.login-ecr.outcome }}
+            - Docker Image Build: ${{ steps.build.outcome }}
+            - Registry Artifact Push: ${{ steps.push.outcome }}
+            - Remote EC2 Deployment: ${{ steps.deploy.outcome }}
+            
+          Investigate the explicit logs breakdown immediately:
+          https://github.com{{ github.run_id }}
