@@ -59,7 +59,15 @@ jobs:
       run: |
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-    - name: 8. Deploy to EC2 via Safe SSH & Perform Health Check Verification Gate
+    - name: 8. Setup Secure Native SSH Key Agent
+      uses: shimataro/ssh-key-action@v2
+      with:
+        key: ${{ secrets.EC2_SSH_KEY }}
+        name: id_rsa # Correctly aligns with OpenSSH's native key handler name
+        known_hosts: ${{ secrets.EC2_HOST_IP }}
+        if_key_exists: replace
+
+    - name: 9. Deploy to EC2 & Perform Health Check Verification Gate
       id: deploy
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
@@ -67,23 +75,16 @@ jobs:
         IMAGE_TAG: ${{ github.sha }}
         EC2_HOST: ${{ secrets.EC2_HOST_IP }}
       run: |
-        mkdir -p ~/.ssh
-        
-        # Scrub hidden Windows carriage returns and add a clean newline to satisfy libcrypto
-        cat << 'EOM' | tr -d '\r' > ~/.ssh/id_rsa
-        ${{ secrets.EC2_RAW_PEM_KEY }}
-        EOM
-        echo "" >> ~/.ssh/id_rsa
-        
-        chmod 600 ~/.ssh/id_rsa
+        # Inject target host identity into known hosts to prevent user interaction blocks
         ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
         
-        ssh -i ~/.ssh/id_rsa ec2-user@$EC2_HOST << 'EEF'
-          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 545931885961.dkr.ecr.us-east-1.amazonaws.com
+        # Execute deployment script payload over the native shell connection using the managed key agent
+        ssh -o StrictHostKeyChecking=no ec2-user@$EC2_HOST << 'EEF'
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ://amazonaws.com
           docker stop flask_app_prod || true
           docker rm flask_app_prod || true
-          docker pull ://amazonaws.com{{ github.sha }}
-          docker run -d -p 5000:5000 --name flask_app_prod ://amazonaws.com{{ github.sha }}
+          docker pull ://amazonaws.com/srinivas/ecr-repo:${{ github.sha }}
+          docker run -d -p 5000:5000 --name flask_app_prod ://amazonaws.com/srinivas/ecr-repo:${{ github.sha }}
           sleep 5
           echo "Executing /health verification probe..."
           if curl -f http://localhost:5000/; then
@@ -94,7 +95,7 @@ jobs:
           fi
         EEF
 
-    - name: 9. Send Success Notification Email
+    - name: 10. Send Success Notification Email
       if: success()
       uses: dawidd6/action-send-mail@v3
       with:
@@ -118,7 +119,7 @@ jobs:
           
           Review Full Workflow Logs: https://github.com{{ github.run_id }}
 
-    - name: 10. Send Failure Notification Email
+    - name: 11. Send Failure Notification Email
       if: failure()
       uses: dawidd6/action-send-mail@v3
       with:
