@@ -64,28 +64,14 @@ jobs:
       env:
         COMMIT_HASH: ${{ github.sha }}
       run: |
-        # Pre-seed host signature verification keys to prevent automated terminal blocking loops
         ssh-keyscan -H 3.92.51.26 >> ~/.ssh/known_hosts
-        
-        # Native shell execution using explicit RSA algorithm overrides for AL2023 compatibility
-        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -o KexAlgorithms=+curve25519-sha256 -o PubkeyAcceptedKeyTypes=+ssh-rsa ec2-user@3.92.51.26 << EEF
-          # Explicitly extend paths so shell daemons find docker and aws-cli execution binaries smoothly
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -o KexAlgorithms=+curve25519-sha256 -o PubkeyAcceptedKeyTypes=+ssh-rsa ec2-user@3.92.51.26 << 'EEF'
           export PATH=$PATH:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
-          
-          # Authenticate against AWS ECR
-          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ://amazonaws.com
-          
-          # Clean teardown of existing running container configurations
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 545931885961.dkr.ecr.us-east-1.amazonaws.com
           docker stop flask_app_prod || true
           docker rm flask_app_prod || true
-          
-          # Pull trace-tagged image directly using explicit string definitions
           docker pull ://amazonaws.comCOMMIT_HASH
-          
-          # Launch production service mapping port 5000 directly using explicit string definitions
           docker run -d -p 5000:5000 --name flask_app_prod ://amazonaws.comCOMMIT_HASH
-          
-          # Deploy-Verification Health Check Gate
           sleep 7
           echo "Executing application deployment verification check..."
           if curl -f http://localhost:5000/; then
