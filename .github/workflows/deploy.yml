@@ -27,7 +27,6 @@ jobs:
         MONGO_URI: mongodb://localhost:27017/test_db
       run: |
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # Use python -m pytest to ensure matching virtual environment pathing
         python3 -m pytest -v test_app.py
 
     - name: 4. Configure AWS Credentials
@@ -45,7 +44,7 @@ jobs:
     - name: 6. Build Docker Image (Commit SHA Tagged)
       id: build
       env:
-        ECR_REGISTRY: ://amazonaws.com
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         ECR_REPOSITORY: srinivas/ecr-repo
         IMAGE_TAG: ${{ github.sha }}
       run: |
@@ -54,7 +53,7 @@ jobs:
     - name: 7. Push Image to ECR
       id: push
       env:
-        ECR_REGISTRY: ://amazonaws.com
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         ECR_REPOSITORY: srinivas/ecr-repo
         IMAGE_TAG: ${{ github.sha }}
       run: |
@@ -64,7 +63,7 @@ jobs:
       id: deploy
       uses: appleboy/ssh-action@v1.0.3
       env:
-        ECR_REGISTRY: ://amazonaws.com
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         ECR_REPOSITORY: srinivas/ecr-repo
         IMAGE_TAG: ${{ github.sha }}
       with:
